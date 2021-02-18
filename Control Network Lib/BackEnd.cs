@@ -1,7 +1,7 @@
 ﻿using System;
 using Control_Network_Lib.data;
 using Control_Network_Lib.src;
-using WebSocketSharp;
+using WatsonWebsocket;
 using Newtonsoft.Json;
 
 namespace Control_Network_Lib
@@ -15,21 +15,23 @@ namespace Control_Network_Lib
         public static void BackEndStart(string url, string key)
         {
             accessKey = key;
-            WebSocket ws = new WebSocket(url);
-            ws.OnMessage += (sender, e) =>
-            {
-                if (e.IsText) recivedTMessage(e.Data);
-            };
+            WatsonWsClient wsClient = new WatsonWsClient(new Uri(url));
+            wsClient.MessageReceived += receivedMessage;
+
         }
 
-        private static void recivedTMessage(string msg)
+        private static void receivedMessage(object sender, MessageReceivedEventArgs args)
         {
+            //converting the received Message to a NetworkMessage Object
+            string msg = Util.ByteArrayToString(args.Data);
             NetworkMessage message;
             try
             {
                 message = JsonConvert.DeserializeObject<NetworkMessage>(msg);
-            }catch(JsonSerializationException) { return; }
+            }
+            catch (JsonSerializationException) { return; }
 
+            //NetworkMessage is getting processed
             if (message.accessKey != accessKey) return;
             switch(message.messageType)
             {
